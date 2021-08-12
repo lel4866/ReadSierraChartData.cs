@@ -1,0 +1,16 @@
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\bin\Debug\net6.0\ReadSierraChartDataSharp.exe
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\bin\Debug\net6.0\ReadSierraChartDataSharp.deps.json
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\bin\Debug\net6.0\ReadSierraChartDataSharp.runtimeconfig.json
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\bin\Debug\net6.0\ReadSierraChartDataSharp.dll
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\bin\Debug\net6.0\ref\ReadSierraChartDataSharp.dll
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\bin\Debug\net6.0\ReadSierraChartDataSharp.pdb
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.csproj.AssemblyReference.cache
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.AssemblyInfoInputs.cache
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.AssemblyInfo.cs
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.ImplicitNamespaceImports.cs
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.csproj.CoreCompileInputs.cache
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.dll
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ref\ReadSierraChartDataSharp.dll
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.pdb
+C:\Users\lel48\source\repos\ReadSierraChartDataSharp\ReadSierraChartDataSharp\obj\Debug\net6.0\ReadSierraChartDataSharp.genruntimeconfig.cache
