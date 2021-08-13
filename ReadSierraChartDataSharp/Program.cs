@@ -84,8 +84,10 @@ void ProcessScidFile(string futures_root, string filepath) {
     }
 }
 
-DateTime GetEasternDateTimeFromSCDateTime(Int64 sctd) {
-    DateTime utc  = SCDateTimeEpoch.AddTicks(sctd * 10L);
+// convert from Sierra Chart DateTime to C# DateTime in Easter US timezone
+DateTime GetEasternDateTimeFromSCDateTime(Int64 scdt) {
+    // SCDateTime is in microseconds (since 12/30/1899); C# DateTime is in 100 nanoseconds
+    DateTime utc  = SCDateTimeEpoch.AddTicks(scdt * 10L);
     return TimeZoneInfo.ConvertTimeFromUtc(utc, EasternTimeZone);
 }
 
