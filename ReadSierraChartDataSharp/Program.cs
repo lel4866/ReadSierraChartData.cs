@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 const string datafile_dir = "C:/SierraChart/Data/";
 const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
 const string futures_root = "ES";
-
+Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
 
 string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
 string[] existing_filenames = Directory.GetFiles(datafile_outdir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
@@ -25,14 +25,33 @@ foreach (string filename in filenames) {
     processScidFile(futures_root, filename);
 }
 
-void processScidFile(string futures_root, string filename) {
-    char[] futures_codes = { 'H', 'M', 'U', 'Z' };
+void processScidFile(string futures_root, string filepath) {
 
-    string result = Path.GetFileNameWithoutExtension(filename);
+    string filename = Path.GetFileName(filepath);
     char futures_code = filename[futures_root.Length - 1];
-    if (!(futures_codes.Contains(futures_code)))
+    if (!futures_codes.ContainsKey(futures_code))
         return;
-    int month = GetMonthFromFuturesCode(futures_code);
+    string futures_two_digit_year_str = filename.Substring(futures_root.Length, 2);
+    if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1]))
+        return;
+    var futures_year = 2000 + Int32.Parse(futures_two_digit_year_str);
+
+    int end_month = futures_codes[futures_code];
+    int start_month = end_month - 3;
+    int start_year, end_year;
+    start_year = end_year = futures_year;
+    switch (futures_code) {
+        case 'H':
+            start_month = 12;
+            start_year = end_year - 1;
+            break;
+        case 'Z':
+            end_month = 3;
+            end_year++;
+            break;
+    }
+
+    string out_path = datafile_outdir + futures_root + futures_code + futures_two_digit_year_str + ".zip";
 
     var ihr = new s_IntradayFileHeader();
     var ihr_size = Marshal.SizeOf(typeof(s_IntradayFileHeader));
@@ -56,13 +75,6 @@ void processScidFile(string futures_root, string filename) {
         var xxx = 1;
     }
 }
-
-int GetMonthFromFuturesCode(char futures_code) => futures_code switch {
-    'H' => 3,
-    'M' => 6,
-    'U' => 9,
-    'Z' => 12
-};
 
 [StructLayout(LayoutKind.Sequential, Pack = 2)]
 struct s_IntradayFileHeader {
