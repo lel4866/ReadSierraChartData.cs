@@ -23,9 +23,15 @@ TimeZoneInfo EasternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US Eastern S
 string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
 string[] existing_filenames = Directory.GetFiles(datafile_outdir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
 
+Stopwatch stopWatch = new Stopwatch();
+stopWatch.Start();
 foreach (string filename in filenames) {
     ProcessScidFile(futures_root, filename);
+    break;
 }
+stopWatch.Stop();
+Console.WriteLine($"Elapsed time = {stopWatch.Elapsed}");
+//stopWatch.ElapsedMilliseconds;
 
 void ProcessScidFile(string futures_root, string filepath) {
 
