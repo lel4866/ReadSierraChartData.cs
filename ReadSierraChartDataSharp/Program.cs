@@ -34,15 +34,20 @@ Console.WriteLine($"Elapsed time = {stopWatch.Elapsed}");
 //stopWatch.ElapsedMilliseconds;
 
 void ProcessScidFile(string futures_root, string filepath) {
-
+    Console.WriteLine("processing " + filepath);
     string filename = Path.GetFileNameWithoutExtension(filepath);
     char futures_code = filename[futures_root.Length];
     if (!futures_codes.ContainsKey(futures_code))
         return;
+
     string futures_two_digit_year_str = filename.Substring(futures_root.Length+1, 2);
     if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1]))
         return;
-    var futures_year = 2000 + Int32.Parse(futures_two_digit_year_str);
+    int futures_year;
+    bool parse_suceeded = Int32.TryParse(futures_two_digit_year_str, out futures_year);
+    if (!parse_suceeded)
+        return;
+    futures_year += 2000;
 
     int end_month = futures_codes[futures_code];
     int start_month = end_month - 3;
@@ -59,32 +64,69 @@ void ProcessScidFile(string futures_root, string filepath) {
             break;
     }
 
-    string out_path = datafile_outdir + futures_root + futures_code + futures_two_digit_year_str + ".zip";
+    string out_fn_base = futures_root + futures_code + futures_two_digit_year_str;
+    string out_path = datafile_outdir + out_fn_base;
+    string out_path_csv = out_path + ".csv";
+    string out_path_zip = out_fn_base + ".zip";
+    string out_path_filename = out_fn_base + ".csv";
+    // os.chdir(datafile_outdir); // do this so zip archive does not use full path to file...just filename
 
-    // only keep ticks between start_date and end_date
-    DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Local);
-    DateTime end_dt = new DateTime(end_year, end_month, 9, 18, 0, 0, DateTimeKind.Local);
+    // only keep ticks between start_date and end_date. Kind is unspecified since it IS NOT Local...it is US/Eastern
+    DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
+    DateTime end_dt = new DateTime(end_year, end_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
 
     var ihr = new s_IntradayFileHeader();
     var ihr_size = Marshal.SizeOf(typeof(s_IntradayFileHeader));
 
-    var ifr = new s_IntradayRecord();
-    using (var f = File.Open(filepath, FileMode.Open)) {
-        BinaryReader io = new BinaryReader(f);
+    var ir = new s_IntradayRecord();
+    using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
+        using (StreamWriter writer = new StreamWriter(out_path_csv)) { 
+            BinaryReader io = new BinaryReader(f);
 
-        // skip 56 byte header
-        ihr.Read(io);
-        Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
+            // skip 56 byte header
+            ihr.Read(io);
+            Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
-        int remaining_bytes = (int)ihr.HeaderSize - ihr_size;
-        io.ReadBytes(remaining_bytes);
+            int remaining_bytes = (int)ihr.HeaderSize - ihr_size;
+            try
+            {
+                io.ReadBytes(remaining_bytes);
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("IO Error reading header: " + filepath);
+                return;
+            }
 
-        var count = 0;
-        while (io.BaseStream.Position != io.BaseStream.Length) {
-            ifr.Read(io);
-            // convert UTC SCDateTime to C# DateTime in Eastern US timezone
-            DateTime dt = GetEasternDateTimeFromSCDateTime(ifr.SCDateTime);
-            count++;
+            var count = 0;
+            string prev_ts = "";
+            while (io.BaseStream.Position != io.BaseStream.Length) {
+                if (!ir.Read(io))
+                {
+                    Console.WriteLine("IO Error reading data: " + filepath);
+                    return;
+                }
+                count++;
+
+                // convert UTC SCDateTime to C# DateTime in Eastern US timezone
+                DateTime dt_et = GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
+
+                // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
+                if (dt_et < start_dt)
+                    continue;
+                if (dt_et >= end_dt)
+                    break;
+
+                // only keep 1 tick for each second
+                string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                if (ts == prev_ts)
+                    continue;
+                prev_ts = ts;
+
+                // convert tick tuple to string
+                var outstr = $"{ts},{ir.Close:F2}";
+                writer.WriteLine($"{ts},{ir.Close:F2}");
+            }
         }
         var xxx = 1;
     }
@@ -125,16 +167,24 @@ struct s_IntradayRecord {
     internal UInt32 BidVolume;
     internal UInt32 AskVolume;
 
-    internal void Read(BinaryReader f) {
-        SCDateTime = f.ReadInt64();
-        Open = f.ReadSingle();
-        High = f.ReadSingle();
-        Low = f.ReadSingle();
-        Close = f.ReadSingle();
-        NumTrades = f.ReadUInt32();
-        TotalVolume = f.ReadUInt32();
-        BidVolume = f.ReadUInt32();
-        AskVolume = f.ReadUInt32();
+    internal bool Read(BinaryReader f) {
+        try
+        {
+            SCDateTime = f.ReadInt64();
+            Open = f.ReadSingle();
+            High = f.ReadSingle();
+            Low = f.ReadSingle();
+            Close = f.ReadSingle();
+            NumTrades = f.ReadUInt32();
+            TotalVolume = f.ReadUInt32();
+            BidVolume = f.ReadUInt32();
+            AskVolume = f.ReadUInt32();
+        }
+        catch (IOException) {
+            return false;
+        }
+
+        return true;
     }
 }
 
