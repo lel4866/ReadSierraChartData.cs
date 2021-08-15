@@ -8,28 +8,22 @@ using System.Diagnostics;
 // yes...a hand coded Logger class...but this is really a small, lightweight app
 // I just need: datetime, code, string
 
-namespace ReadSierraChartDataSharp
-{
-    internal class Logger
-    {
+namespace ReadSierraChartDataSharp {
+    internal class Logger {
         internal int state = -1;
         StreamWriter? outputFile;
 
-        internal Logger(string datafile_dir)
-        {
-            try
-            {
+        internal Logger(string datafile_dir) {
+            try {
                 string log_path = Path.Combine(datafile_dir, "Logs/");
-                if (!Directory.Exists(log_path))
-                {
+                if (!Directory.Exists(log_path)) {
                     Directory.CreateDirectory(log_path);
                 }
                 string dt_str = DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
-                string log_filename = log_path + "ReadSierraChartDataSharp_"  + dt_str + ".txt";
+                string log_filename = log_path + "ReadSierraChartDataSharp_" + dt_str + ".txt";
                 outputFile = new StreamWriter(log_filename);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Console.WriteLine("Unable to create log file in :" + datafile_dir + "\n Message: " + ex.Message);
                 state = -2;
                 return;
@@ -39,19 +33,16 @@ namespace ReadSierraChartDataSharp
             state = 0;
         }
 
-        internal int log(int code, string message)
-        {
+        internal int log(int code, string message) {
             Debug.Assert(state == 0);
-            if (outputFile != null)
-            {
+            if (outputFile != null) {
                 string dt_str = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
                 outputFile.WriteLine($"{dt_str},{code},{message}");
             }
             return code;
         }
 
-        internal void close()
-        {
+        internal void close() {
             if (outputFile != null)
                 outputFile.Close();
             state = -1;

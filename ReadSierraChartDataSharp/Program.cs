@@ -11,10 +11,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO.Compression;
 
-namespace ReadSierraChartDataSharp
-{
-    class Program
-    {
+namespace ReadSierraChartDataSharp {
+    class Program {
         const string datafile_dir = "C:/SierraChart/Data/";
         const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
         const string futures_root = "ES";
@@ -24,8 +22,7 @@ namespace ReadSierraChartDataSharp
 
         // constructed from Sierra Charts IntradayRecord.h file
         [StructLayout(LayoutKind.Sequential, Pack = 2)]
-        struct s_IntradayFileHeader
-        {
+        struct s_IntradayFileHeader {
             const UInt32 UNIQUE_HEADER_ID = 0x44494353;  // "SCID"
 
             internal UInt32 FileTypeUniqueHeaderID;  // "SCID"
@@ -33,8 +30,7 @@ namespace ReadSierraChartDataSharp
             internal UInt32 RecordSize;
             internal UInt16 Version;
 
-            internal void Read(BinaryReader f)
-            {
+            internal void Read(BinaryReader f) {
                 FileTypeUniqueHeaderID = f.ReadUInt32();
                 HeaderSize = f.ReadUInt32();
                 RecordSize = f.ReadUInt32();
@@ -43,8 +39,7 @@ namespace ReadSierraChartDataSharp
         }
 
         // constructed from Sierra Charts IntradayRecord.h file
-        struct s_IntradayRecord
-        {
+        struct s_IntradayRecord {
             internal Int64 SCDateTime; // in microseconds since 1899-12-30 00:00:00 UTC
             internal float Open;
             internal float High;
@@ -55,10 +50,8 @@ namespace ReadSierraChartDataSharp
             internal UInt32 BidVolume;
             internal UInt32 AskVolume;
 
-            internal bool Read(BinaryReader f)
-            {
-                try
-                {
+            internal bool Read(BinaryReader f) {
+                try {
                     SCDateTime = f.ReadInt64();
                     Open = f.ReadSingle();
                     High = f.ReadSingle();
@@ -69,8 +62,7 @@ namespace ReadSierraChartDataSharp
                     BidVolume = f.ReadUInt32();
                     AskVolume = f.ReadUInt32();
                 }
-                catch (IOException)
-                {
+                catch (IOException) {
                     return false;
                 }
 
@@ -78,21 +70,18 @@ namespace ReadSierraChartDataSharp
             }
         }
 
-        enum ReturnCodes
-        {
+        enum ReturnCodes {
             Successful,
             MalformedFuturesFileName,
             IOErrorReadingData
         }
 
-        static int Main(string[] args)
-        {
+        static int Main(string[] args) {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
             var logger = new Logger(datafile_outdir);
-            if (logger.state != 0)
-            {
+            if (logger.state != 0) {
                 Console.WriteLine("Unable to creat Logger in directory:" + datafile_outdir);
                 return -1;
             }
@@ -108,8 +97,7 @@ namespace ReadSierraChartDataSharp
             return 0;
         }
 
-        static int ProcessScidFile(string futures_root, string filepath, Logger logger)
-        {
+        static int ProcessScidFile(string futures_root, string filepath, Logger logger) {
             Console.WriteLine("Processing " + filepath);
             string filename = Path.GetFileNameWithoutExtension(filepath);
             char futures_code = filename[futures_root.Length];
@@ -130,8 +118,7 @@ namespace ReadSierraChartDataSharp
             int start_month = end_month - 3;
             int start_year, end_year;
             start_year = end_year = futures_year;
-            switch (futures_code)
-            {
+            switch (futures_code) {
                 case 'H':
                     start_month = 12;
                     start_year = end_year - 1;
@@ -154,10 +141,8 @@ namespace ReadSierraChartDataSharp
             var ihr_size = Marshal.SizeOf(typeof(s_IntradayFileHeader));
 
             var ir = new s_IntradayRecord();
-            using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read))
-            {
-                using (StreamWriter writer = new StreamWriter(out_path_csv))
-                {
+            using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
+                using (StreamWriter writer = new StreamWriter(out_path_csv)) {
                     BinaryReader io = new BinaryReader(f);
 
                     // skip 56 byte header
@@ -165,21 +150,17 @@ namespace ReadSierraChartDataSharp
                     Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
                     int remaining_bytes = (int)ihr.HeaderSize - ihr_size;
-                    try
-                    {
+                    try {
                         io.ReadBytes(remaining_bytes);
                     }
-                    catch (IOException)
-                    {
+                    catch (IOException) {
                         Console.WriteLine("IO Error reading header: " + filepath);
                         return logger.log((int)ReturnCodes.IOErrorReadingData, "IO Error: " + filepath);
                     }
 
                     string prev_ts = "";
-                    while (io.BaseStream.Position != io.BaseStream.Length)
-                    {
-                        if (!ir.Read(io))
-                        {
+                    while (io.BaseStream.Position != io.BaseStream.Length) {
+                        if (!ir.Read(io)) {
                             Console.WriteLine("IO Error reading data: " + filepath);
                             return logger.log((int)ReturnCodes.IOErrorReadingData, "IO Error: " + filepath);
                         }
@@ -207,8 +188,7 @@ namespace ReadSierraChartDataSharp
 
                 string out_path_zip = Path.ChangeExtension(out_path_csv, ".zip");
                 File.Delete(out_path_zip); // needed or ZipFile.Open with ZipArchiveMode.Create could fail
-                using (ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create))
-                {
+                using (ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create)) {
                     archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
                     File.Delete(out_path_csv);
                 }
@@ -218,8 +198,7 @@ namespace ReadSierraChartDataSharp
         }
 
         // convert from Sierra Chart DateTime to C# DateTime in Easter US timezone
-        static DateTime GetEasternDateTimeFromSCDateTime(Int64 scdt)
-        {
+        static DateTime GetEasternDateTimeFromSCDateTime(Int64 scdt) {
             // SCDateTime is in microseconds (since 12/30/1899); C# DateTime is in 100 nanoseconds
             DateTime utc = SCDateTimeEpoch.AddTicks(scdt * 10L);
             return TimeZoneInfo.ConvertTimeFromUtc(utc, EasternTimeZone);
