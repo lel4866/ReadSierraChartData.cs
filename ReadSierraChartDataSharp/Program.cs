@@ -7,11 +7,9 @@
 // the following struct definitions are taken from the Sierra Chart scdatetime.h file
 // Times are in UTC
 
-
-using System;
-using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.IO.Compression;
 
 const string datafile_dir = "C:/SierraChart/Data/";
 const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
@@ -25,13 +23,9 @@ string[] existing_filenames = Directory.GetFiles(datafile_outdir, futures_root +
 
 Stopwatch stopWatch = new Stopwatch();
 stopWatch.Start();
-foreach (string filename in filenames) {
-    ProcessScidFile(futures_root, filename);
-    break;
-}
+Parallel.ForEach(filenames, filename => ProcessScidFile(futures_root, filename));
 stopWatch.Stop();
 Console.WriteLine($"Elapsed time = {stopWatch.Elapsed}");
-//stopWatch.ElapsedMilliseconds;
 
 void ProcessScidFile(string futures_root, string filepath) {
     Console.WriteLine("processing " + filepath);
@@ -66,10 +60,8 @@ void ProcessScidFile(string futures_root, string filepath) {
 
     string out_fn_base = futures_root + futures_code + futures_two_digit_year_str;
     string out_path = datafile_outdir + out_fn_base;
-    string out_path_csv = out_path + ".csv";
-    string out_path_zip = out_fn_base + ".zip";
-    string out_path_filename = out_fn_base + ".csv";
-    // os.chdir(datafile_outdir); // do this so zip archive does not use full path to file...just filename
+    string out_path_csv = out_path + ".csv"; // full path
+    string out_path_filename = out_fn_base + ".csv"; // no path
 
     // only keep ticks between start_date and end_date. Kind is unspecified since it IS NOT Local...it is US/Eastern
     DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
@@ -98,7 +90,6 @@ void ProcessScidFile(string futures_root, string filepath) {
                 return;
             }
 
-            var count = 0;
             string prev_ts = "";
             while (io.BaseStream.Position != io.BaseStream.Length) {
                 if (!ir.Read(io))
@@ -106,7 +97,6 @@ void ProcessScidFile(string futures_root, string filepath) {
                     Console.WriteLine("IO Error reading data: " + filepath);
                     return;
                 }
-                count++;
 
                 // convert UTC SCDateTime to C# DateTime in Eastern US timezone
                 DateTime dt_et = GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
@@ -118,16 +108,24 @@ void ProcessScidFile(string futures_root, string filepath) {
                     break;
 
                 // only keep 1 tick for each second
+                // note...using "s" is twice as fast as using a custom format string
                 string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
                 if (ts == prev_ts)
                     continue;
                 prev_ts = ts;
 
                 // convert tick tuple to string
-                var outstr = $"{ts},{ir.Close:F2}";
                 writer.WriteLine($"{ts},{ir.Close:F2}");
             }
         }
+
+        string out_path_zip = Path.ChangeExtension(out_path_csv, ".zip");
+        File.Delete(out_path_zip); // needed or ZipFile.Open with ZipArchiveMode.Create could fail
+        using (ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create)) {
+            archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
+            File.Delete(out_path_csv);
+        }
+
         var xxx = 1;
     }
 }
