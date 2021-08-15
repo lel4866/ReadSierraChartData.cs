@@ -20,6 +20,7 @@ class Program
     static readonly DateTime SCDateTimeEpoch = new DateTime(1899, 12, 30, 0, 0, 0, DateTimeKind.Utc); // Sierra Chart SCDateTime start
     static readonly TimeZoneInfo EasternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US Eastern Standard Time");
 
+    // constructed from Sierra Charts IntradayRecord.h file
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
     struct s_IntradayFileHeader
     {
@@ -39,6 +40,7 @@ class Program
         }
     }
 
+    // constructed from Sierra Charts IntradayRecord.h file
     struct s_IntradayRecord
     {
         internal Int64 SCDateTime; // in microseconds since 1899-12-30 00:00:00 UTC
