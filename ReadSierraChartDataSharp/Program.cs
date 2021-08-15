@@ -125,7 +125,6 @@ class Program
         string out_fn_base = futures_root + futures_code + futures_two_digit_year_str;
         string out_path = datafile_outdir + out_fn_base;
         string out_path_csv = out_path + ".csv"; // full path
-        string out_path_filename = out_fn_base + ".csv"; // no path
 
         // only keep ticks between start_date and end_date. Kind is unspecified since it IS NOT Local...it is US/Eastern
         DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
