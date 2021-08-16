@@ -28,10 +28,8 @@ namespace ReadSierraChartDataSharp {
             stopWatch.Start();
 
             var logger = new Logger(datafile_outdir);
-            if (logger.state != 0) {
-                Console.WriteLine("Unable to creat Logger in directory:" + datafile_outdir);
+            if (logger.state != 0)
                 return -1;
-            }
 
             string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
             string[] existing_filenames = Directory.GetFiles(datafile_outdir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
