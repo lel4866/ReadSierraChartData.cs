@@ -19,7 +19,7 @@ namespace ReadSierraChartDataSharp {
         static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
         static readonly DateTime SCDateTimeEpoch = new DateTime(1899, 12, 30, 0, 0, 0, DateTimeKind.Utc); // Sierra Chart SCDateTime start
         static readonly TimeZoneInfo EasternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US Eastern Standard Time");
-
+#if False
         // constructed from Sierra Charts IntradayRecord.h file
         [StructLayout(LayoutKind.Sequential, Pack = 2)]
         struct s_IntradayFileHeader {
@@ -69,7 +69,7 @@ namespace ReadSierraChartDataSharp {
                 return true;
             }
         }
-
+#endif
         enum ReturnCodes {
             Successful,
             MalformedFuturesFileName,
@@ -137,17 +137,17 @@ namespace ReadSierraChartDataSharp {
             DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
             DateTime end_dt = new DateTime(end_year, end_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
 
-            var ihr = new s_IntradayFileHeader();
-            var ihr_size = Marshal.SizeOf(typeof(s_IntradayFileHeader));
+            var ihr = new Scid.s_IntradayFileHeader();
+            var ihr_size = Marshal.SizeOf(typeof(Scid.s_IntradayFileHeader));
 
-            var ir = new s_IntradayRecord();
+            var ir = new Scid.s_IntradayRecord();
             using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
                 using (StreamWriter writer = new StreamWriter(out_path_csv)) {
                     BinaryReader io = new BinaryReader(f);
 
                     // skip 56 byte header
                     ihr.Read(io);
-                    Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
+                    Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(Scid.s_IntradayRecord)));
 
                     int remaining_bytes = (int)ihr.HeaderSize - ihr_size;
                     try {
