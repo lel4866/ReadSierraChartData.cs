@@ -14,7 +14,7 @@ namespace ReadSierraChartDataSharp {
                 if (!Directory.Exists(log_path)) {
                     Directory.CreateDirectory(log_path);
                 }
-                string dt_str = DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
+                string dt_str = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string log_filename = log_path + "ReadSierraChartDataSharp_" + dt_str + ".txt";
                 outputFile = new StreamWriter(log_filename);
             }

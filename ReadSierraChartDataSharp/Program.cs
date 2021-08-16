@@ -17,6 +17,7 @@ namespace ReadSierraChartDataSharp {
         const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
         const string futures_root = "ES";
         static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
+
         enum ReturnCodes {
             Successful,
             MalformedFuturesFileName,
