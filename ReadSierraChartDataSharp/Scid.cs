@@ -7,6 +7,9 @@
 
 namespace ReadSierraChartDataSharp {
     internal class Scid {
+        static readonly DateTime SCDateTimeEpoch = new DateTime(1899, 12, 30, 0, 0, 0, DateTimeKind.Utc); // Sierra Chart SCDateTime start
+        static readonly TimeZoneInfo EasternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US Eastern Standard Time");
+
         [StructLayout(LayoutKind.Sequential, Pack = 2)]
         internal struct s_IntradayFileHeader {
             const UInt32 UNIQUE_HEADER_ID = 0x44494353;  // "SCID"
@@ -54,6 +57,13 @@ namespace ReadSierraChartDataSharp {
 
                 return true;
             }
+        }
+
+        // convert from Sierra Chart DateTime to C# DateTime in Easter US timezone
+        internal static DateTime GetEasternDateTimeFromSCDateTime(Int64 scdt) {
+            // SCDateTime is in microseconds (since 12/30/1899); C# DateTime is in 100 nanoseconds
+            DateTime utc = SCDateTimeEpoch.AddTicks(scdt * 10L);
+            return TimeZoneInfo.ConvertTimeFromUtc(utc, EasternTimeZone);
         }
     }
 }

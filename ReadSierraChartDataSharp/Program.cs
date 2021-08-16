@@ -17,8 +17,6 @@ namespace ReadSierraChartDataSharp {
         const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
         const string futures_root = "ES";
         static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
-        static readonly DateTime SCDateTimeEpoch = new DateTime(1899, 12, 30, 0, 0, 0, DateTimeKind.Utc); // Sierra Chart SCDateTime start
-        static readonly TimeZoneInfo EasternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US Eastern Standard Time");
         enum ReturnCodes {
             Successful,
             MalformedFuturesFileName,
@@ -115,7 +113,7 @@ namespace ReadSierraChartDataSharp {
                         }
 
                         // convert UTC SCDateTime to C# DateTime in Eastern US timezone
-                        DateTime dt_et = GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
+                        DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
 
                         // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
                         if (dt_et < start_dt)
@@ -144,13 +142,6 @@ namespace ReadSierraChartDataSharp {
 
                 return logger.log((int)ReturnCodes.Successful, filepath + " created.");
             }
-        }
-
-        // convert from Sierra Chart DateTime to C# DateTime in Easter US timezone
-        static DateTime GetEasternDateTimeFromSCDateTime(Int64 scdt) {
-            // SCDateTime is in microseconds (since 12/30/1899); C# DateTime is in 100 nanoseconds
-            DateTime utc = SCDateTimeEpoch.AddTicks(scdt * 10L);
-            return TimeZoneInfo.ConvertTimeFromUtc(utc, EasternTimeZone);
         }
     }
 }
