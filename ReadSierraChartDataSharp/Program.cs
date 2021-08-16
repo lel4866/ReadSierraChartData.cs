@@ -105,6 +105,7 @@ namespace ReadSierraChartDataSharp {
 
                     string prev_ts = "";
                     while (io.BaseStream.Position != io.BaseStream.Length) {
+                        // read a Sierra Chart tick record
                         if (!ir.Read(io)) {
                             Console.WriteLine("IO Error reading data: " + filepath);
                             return logger.log((int)ReturnCodes.IOErrorReadingData, "IO Error: " + filepath);
