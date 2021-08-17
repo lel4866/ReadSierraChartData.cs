@@ -16,7 +16,7 @@ namespace ReadSierraChartDataSharp {
         const string version = "ReadSierraChartDataSharp 0.1.0";
         const string datafile_dir = "C:/SierraChart/Data/";
         const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
-        const string futures_root = "ES";
+        static string futures_root = "ES";
         static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
         static bool update_only = true; // only process .scid files in datafile_dir which do not have counterparts in datafile_outdir
 
@@ -52,32 +52,52 @@ namespace ReadSierraChartDataSharp {
 
         static int ProcessCommandLineArguments(string[] args) {
             int rc = 0;
+            string? arg_name = null;
 
             foreach (string arg in args) {
-                switch (arg) {
-                    case "-v":
-                    case "--version":
-                        Console.WriteLine(version);
-                        break;
-                    case "-r":
-                    case "--replace":
-                        update_only = false;
-                        Console.WriteLine(version);
-                        break;
-                    case "-h":
-                    case "--help":
-                        Console.WriteLine(version);
-                        Console.WriteLine("Convert Sierra Chart .scid files into compressed zip files with 3 months data.");
-                        Console.WriteLine("Command line arguments:");
-                        Console.WriteLine("    --version, -v : display version number");
-                        Console.WriteLine("    --update, -u  : only process files input directory which do not have corresponding file in output directory");
-                        rc = 1;
-                        break;
+                if (arg_name == null) {
+                    switch (arg) {
+                        case "-v":
+                        case "--version":
+                            Console.WriteLine(version);
+                            break;
+                        case "-r":
+                        case "--replace":
+                            update_only = false;
+                            Console.WriteLine(version);
+                            break;
+                        case "-s":
+                        case "--symbol":
+                            arg_name = "-s";
+                            break;
+                        case "-h":
+                        case "--help":
+                            Console.WriteLine(version);
+                            Console.WriteLine("Convert Sierra Chart .scid files into compressed zip files with 3 months data.");
+                            Console.WriteLine("Command line arguments:");
+                            Console.WriteLine("    --version, -v : display version number");
+                            Console.WriteLine("    --update, -u  : only process files input directory which do not have corresponding file in output directory");
+                            Console.WriteLine("    --symbol, -s  : futures contract symbol; i.e. for CME SP500 e-mini: ES");
+                            rc = 1;
+                            break;
 
-                    default:
-                        Console.WriteLine("Invalid command line argument: " + arg);
-                        rc = -1;
-                        break;
+                        default:
+                            Console.WriteLine("Invalid command line argument: " + arg);
+                            rc = -1;
+                            break;
+                    }
+                }
+                else {
+                    switch (arg_name) {
+                        case "-s":
+                            if (futures_root.Length > 3) {
+                                Console.WriteLine("Invalid futures contract symbol: " + arg);
+                                return -1;
+                            }
+                            futures_root = arg.ToUpper();
+                            break;
+                    }
+                    arg_name = null;
                 }
             }
 
