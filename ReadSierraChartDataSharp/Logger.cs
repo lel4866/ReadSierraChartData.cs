@@ -29,9 +29,11 @@ namespace ReadSierraChartDataSharp {
         }
 
         internal int log(int code, string message) {
+            Debug.Assert(message.Length > 0);
             Debug.Assert(state == 0);
             if (outputFile != null) {
                 string dt_str = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                Debug.Assert(dt_str.Length > 0);
                 outputFile.WriteLine($"{dt_str},{code},{message}");
             }
             return code;
