@@ -13,13 +13,16 @@ using System.IO.Compression;
 
 namespace ReadSierraChartDataSharp {
     class Program {
+        const string version = "ReadSierraChartDataSharp 0.1.0";
         const string datafile_dir = "C:/SierraChart/Data/";
         const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
         const string futures_root = "ES";
         static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
+        static bool update_only = true; // only process .scid files in datafile_dir which do not have counterparts in datafile_outdir
 
         enum ReturnCodes {
             Successful,
+            Ignored,
             MalformedFuturesFileName,
             IOErrorReadingData
         }
@@ -27,6 +30,10 @@ namespace ReadSierraChartDataSharp {
         static int Main(string[] args) {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
+
+            int rc = ProcessCommandLineArguments(args);
+            if (rc != 0) 
+                return rc;
 
             var logger = new Logger(datafile_outdir);
             if (logger.state != 0)
@@ -43,22 +50,68 @@ namespace ReadSierraChartDataSharp {
             return 0;
         }
 
+        static int ProcessCommandLineArguments(string[] args) {
+            int rc = 0;
+
+            foreach (string arg in args) {
+                switch (arg) {
+                    case "-v":
+                    case "--version":
+                        Console.WriteLine(version);
+                        break;
+                    case "-r":
+                    case "--replace":
+                        update_only = false;
+                        Console.WriteLine(version);
+                        break;
+                    case "-h":
+                    case "--help":
+                        Console.WriteLine(version);
+                        Console.WriteLine("Convert Sierra Chart .scid files into compressed zip files with 3 months data.");
+                        Console.WriteLine("Command line arguments:");
+                        Console.WriteLine("    --version, -v : display version number");
+                        Console.WriteLine("    --update, -u  : only process files input directory which do not have corresponding file in output directory");
+                        rc = 1;
+                        break;
+
+                    default:
+                        Console.WriteLine("Invalid command line argument: " + arg);
+                        rc = -1;
+                        break;
+                }
+            }
+
+            return rc;
+        }
+
         static int ProcessScidFile(string futures_root, string filepath, Logger logger) {
-            Console.WriteLine("Processing " + filepath);
             string filename = Path.GetFileNameWithoutExtension(filepath);
             char futures_code = filename[futures_root.Length];
             if (!futures_codes.ContainsKey(futures_code))
                 return logger.log((int)ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
 
+            // get 4 digit futures year from .scid filename (which has 2 digit year)
             string futures_two_digit_year_str = filename.Substring(futures_root.Length + 1, 2);
             if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1]))
                 return logger.log((int)ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
-
             int futures_year;
             bool parse_suceeded = Int32.TryParse(futures_two_digit_year_str, out futures_year);
             if (!parse_suceeded)
                 return logger.log((int)ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
             futures_year += 2000;
+
+            // get filenames for temporary .csv output file and final .zip file
+            string out_fn_base = futures_root + futures_code + futures_two_digit_year_str;
+            string out_path = datafile_outdir + out_fn_base;
+            string out_path_csv = out_path + ".csv"; // full path
+            string out_path_zip = out_path + ".zip"; // full path
+
+            // if update_only is true and file already exists in datafile_outdir, ignore it
+            if (update_only) {
+                if (File.Exists(out_path_zip))
+                    return logger.log((int)ReturnCodes.Ignored, "Update only mode; file ignored: " + filepath);
+            }
+            Console.WriteLine("Processing " + filepath);
 
             int end_month = futures_codes[futures_code];
             int start_month = end_month - 3;
@@ -74,10 +127,6 @@ namespace ReadSierraChartDataSharp {
                     end_year++;
                     break;
             }
-
-            string out_fn_base = futures_root + futures_code + futures_two_digit_year_str;
-            string out_path = datafile_outdir + out_fn_base;
-            string out_path_csv = out_path + ".csv"; // full path
 
             // only keep ticks between start_date and end_date. Kind is unspecified since it IS NOT Local...it is US/Eastern
             DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
@@ -133,7 +182,6 @@ namespace ReadSierraChartDataSharp {
                     }
                 }
 
-                string out_path_zip = Path.ChangeExtension(out_path_csv, ".zip");
                 File.Delete(out_path_zip); // needed or ZipFile.Open with ZipArchiveMode.Create could fail
                 using (ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create)) {
                     archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
