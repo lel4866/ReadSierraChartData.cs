@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿//
+// static class CommandLine
+// Proess ReadSierraChartDataSharp command line
+//
 
 namespace ReadSierraChartDataSharp {
     internal static class CommandLine {

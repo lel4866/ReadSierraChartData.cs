@@ -1,8 +1,7 @@
 {
   "profiles": {
     "ReadSierraChartDataSharp": {
-      "commandName": "Project",
-      "commandLineArgs": "-r"
+      "commandName": "Project"
     }
   }
 }

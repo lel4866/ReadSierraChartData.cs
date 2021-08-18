@@ -1,7 +1,9 @@
-﻿using System.Diagnostics;
-
+﻿//
 // yes...a hand coded Logger class...but this is really a small, lightweight app
 // I just need: datetime, code, string
+//
+
+using System.Diagnostics;
 
 namespace ReadSierraChartDataSharp {
     internal class Logger {

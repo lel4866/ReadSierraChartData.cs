@@ -1,9 +1,9 @@
-﻿using System.Runtime.InteropServices;
-
-// this class defines the Sierra Chart Intraday data class which implements reading of Sierra Chart intraday data
+﻿// this class defines the Sierra Chart Intraday data class which implements reading of Sierra Chart intraday data
 // Sierra Chart .scid files are binary files that consist of a header (s_IntradayFileHeader) followed by a a number
 // of records (s_IntradayRecord)
 // The structure definitions are based on the Sierra Chart IntradayRecord.h header file
+
+using System.Runtime.InteropServices;
 
 namespace ReadSierraChartDataSharp {
     internal class Scid {
