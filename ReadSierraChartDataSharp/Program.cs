@@ -42,7 +42,6 @@ namespace ReadSierraChartDataSharp {
                 return -1;
 
             string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
-            string[] existing_filenames = Directory.GetFiles(datafile_outdir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
             Parallel.ForEach(filenames, filename => ProcessScidFile(futures_root, filename, logger));
             logger.close();
 
