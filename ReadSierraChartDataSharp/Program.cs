@@ -14,15 +14,17 @@ using System.IO.Compression;
 
 namespace ReadSierraChartDataSharp {
     static internal class Program {
-        internal const string version = "ReadSierraChartDataSharp 0.1.0";
-        internal static string futures_root = "ES";
-        internal static bool update_only = true; // only process .scid files in datafile_dir which do not have counterparts in datafile_outdir
+        const string version = "ReadSierraChartDataSharp 0.1.0";
+        const string futures_root = "ES";
+        const bool update_only = true; // only process .scid files in datafile_dir which do not have counterparts in datafile_outdir
 
         const string datafile_dir = "C:/SierraChart/Data/";
         const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
         static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
 
-        enum ReturnCodes {
+        static internal Logger logger = new Logger(datafile_outdir);
+
+        internal enum ReturnCodes {
             Successful,
             Ignored,
             MalformedFuturesFileName,
@@ -30,6 +32,9 @@ namespace ReadSierraChartDataSharp {
         }
 
         static int Main(string[] args) {
+            if (logger.state != 0)
+                return -1;
+
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
@@ -37,12 +42,8 @@ namespace ReadSierraChartDataSharp {
             if (rc != 0) 
                 return rc;
 
-            var logger = new Logger(datafile_outdir);
-            if (logger.state != 0)
-                return -1;
-
             string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
-            Parallel.ForEach(filenames, filename => ProcessScidFile(futures_root, filename, logger));
+            Parallel.ForEach(filenames, filename => ProcessScidFile(filename));
             logger.close();
 
             stopWatch.Stop();
@@ -51,8 +52,10 @@ namespace ReadSierraChartDataSharp {
             return 0;
         }
 
-        static int ProcessScidFile(string futures_root, string filepath, Logger logger) {
+        static int ProcessScidFile(string filepath) {
             string filename = Path.GetFileNameWithoutExtension(filepath);
+
+            // make sure filename has a valid futures code: 'H', 'M', 'U', 'Z'
             char futures_code = filename[futures_root.Length];
             if (!futures_codes.ContainsKey(futures_code))
                 return logger.log((int)ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
@@ -80,45 +83,22 @@ namespace ReadSierraChartDataSharp {
             }
             Console.WriteLine("Processing " + filepath);
 
-            int end_month = futures_codes[futures_code];
-            int start_month = end_month - 3;
-            int start_year, end_year;
-            start_year = end_year = futures_year;
-            switch (futures_code) {
-                case 'H':
-                    start_month = 12;
-                    start_year = end_year - 1;
-                    break;
-                case 'Z':
-                    end_month = 3;
-                    end_year++;
-                    break;
-            }
+            // get start_year, start_month, end_year, end_month of futures contract data we want to keep
+            (int start_year, int start_month, int end_year, int end_month) = getFuturesStartEndDates(futures_code, futures_year);
 
             // only keep ticks between start_date and end_date. Kind is unspecified since it IS NOT Local...it is US/Eastern
             DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
             DateTime end_dt = new DateTime(end_year, end_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
 
-            var ihr = new Scid.s_IntradayFileHeader();
-            var ihr_size = Marshal.SizeOf(typeof(Scid.s_IntradayFileHeader));
-
-            var ir = new Scid.s_IntradayRecord();
             using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
                 using (StreamWriter writer = new StreamWriter(out_path_csv)) {
+                    var ihr = new Scid.s_IntradayFileHeader();
+                    var ir = new Scid.s_IntradayRecord();
                     BinaryReader io = new BinaryReader(f);
 
                     // skip 56 byte header
                     ihr.Read(io);
                     Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(Scid.s_IntradayRecord)));
-
-                    int remaining_bytes = (int)ihr.HeaderSize - ihr_size;
-                    try {
-                        io.ReadBytes(remaining_bytes);
-                    }
-                    catch (IOException) {
-                        Console.WriteLine("IO Error reading header: " + filepath);
-                        return logger.log((int)ReturnCodes.IOErrorReadingData, "IO Error: " + filepath);
-                    }
 
                     string prev_ts = "";
                     while (io.BaseStream.Position != io.BaseStream.Length) {
@@ -157,6 +137,26 @@ namespace ReadSierraChartDataSharp {
 
                 return logger.log((int)ReturnCodes.Successful, out_path_zip + " created.");
             }
+        }
+
+        // get the months and years of the 3 months of futures data we want
+        static (int start_year, int start_month, int end_year, int end_month) getFuturesStartEndDates(char futures_code, int futures_year) {
+            int end_month = futures_codes[futures_code];
+            int start_month = end_month - 3;
+            int start_year, end_year;
+            start_year = end_year = futures_year;
+            switch (futures_code) {
+                case 'H':
+                    start_month = 12;
+                    start_year = end_year - 1;
+                    break;
+                case 'Z':
+                    end_month = 3;
+                    end_year++;
+                    break;
+            }
+
+            return (start_year, start_month, end_year, end_month);
         }
     }
 }

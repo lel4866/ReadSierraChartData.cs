@@ -4,11 +4,13 @@
 // The structure definitions are based on the Sierra Chart IntradayRecord.h header file
 
 using System.Runtime.InteropServices;
+using static ReadSierraChartDataSharp.Program;
 
 namespace ReadSierraChartDataSharp {
     internal class Scid {
         static readonly DateTime SCDateTimeEpoch = new DateTime(1899, 12, 30, 0, 0, 0, DateTimeKind.Utc); // Sierra Chart SCDateTime start
         static readonly TimeZoneInfo EasternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US Eastern Standard Time");
+        static readonly int ihr_size = Marshal.SizeOf(typeof(Scid.s_IntradayFileHeader));
 
         [StructLayout(LayoutKind.Sequential, Pack = 2)]
         internal struct s_IntradayFileHeader {
@@ -19,11 +21,24 @@ namespace ReadSierraChartDataSharp {
             internal UInt32 RecordSize;
             internal UInt16 Version;
 
-            internal void Read(BinaryReader f) {
+            internal ReturnCodes Read(BinaryReader f) {
                 FileTypeUniqueHeaderID = f.ReadUInt32();
                 HeaderSize = f.ReadUInt32();
                 RecordSize = f.ReadUInt32();
                 Version = f.ReadUInt16();
+
+                // skip remaining bytes of header
+                int remaining_bytes = (int)HeaderSize - ihr_size;
+                try {
+                    f.ReadBytes(remaining_bytes);
+                }
+                catch (IOException) {
+                    Console.WriteLine("IO Error reading header: " + f.ToString());
+                    logger.log((int)ReturnCodes.IOErrorReadingData, "IO Error: " + filepath);
+                    return ReturnCodes.IOErrorReadingData;
+                }
+
+                return ReturnCodes.Successful;
             }
         }
 
