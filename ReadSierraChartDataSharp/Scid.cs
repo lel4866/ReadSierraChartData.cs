@@ -21,7 +21,7 @@ namespace ReadSierraChartDataSharp {
             internal UInt32 RecordSize;
             internal UInt16 Version;
 
-            internal ReturnCodes Read(BinaryReader f) {
+            internal bool Read(BinaryReader f) {
                 FileTypeUniqueHeaderID = f.ReadUInt32();
                 HeaderSize = f.ReadUInt32();
                 RecordSize = f.ReadUInt32();
@@ -34,11 +34,11 @@ namespace ReadSierraChartDataSharp {
                 }
                 catch (IOException) {
                     Console.WriteLine("IO Error reading header: " + f.ToString());
-                    logger.log(ReturnCodes.IOErrorReadingData, "IO Error: " + filepath);
-                    return ReturnCodes.IOErrorReadingData;
+                    logger.log(ReturnCodes.IOErrorReadingData, "IO Error: " + f.ToString());
+                    return false;
                 }
 
-                return ReturnCodes.Successful;
+                return true;
             }
         }
 
@@ -67,6 +67,8 @@ namespace ReadSierraChartDataSharp {
                     AskVolume = f.ReadUInt32();
                 }
                 catch (IOException) {
+                    Console.WriteLine("IO Error reading header: " + f.ToString());
+                    logger.log(ReturnCodes.IOErrorReadingData, "IO Error: " + f.ToString());
                     return false;
                 }
 

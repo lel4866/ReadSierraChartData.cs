@@ -16,7 +16,7 @@ namespace ReadSierraChartDataSharp {
 
     internal class Logger {
         internal int state = -1;
-        internal ReturnCodes worst_code = Successful;
+        internal ReturnCodes worst_code = ReturnCodes.Successful;
         StreamWriter? outputFile;
 
         internal Logger(string datafile_dir) {

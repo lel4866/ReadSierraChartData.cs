@@ -92,16 +92,15 @@ namespace ReadSierraChartDataSharp {
                     BinaryReader io = new BinaryReader(f);
 
                     // skip 56 byte header
-                    ihr.Read(io);
+                    if (!ihr.Read(io))
+                        return ReturnCodes.IOErrorReadingData;
                     Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(Scid.s_IntradayRecord)));
 
                     string prev_ts = "";
                     while (io.BaseStream.Position != io.BaseStream.Length) {
                         // read a Sierra Chart tick record
-                        if (!ir.Read(io)) {
-                            Console.WriteLine("IO Error reading data: " + filepath);
-                            return logger.log(ReturnCodes.IOErrorReadingData, "IO Error: " + filepath);
-                        }
+                        if (!ir.Read(io))
+                            return ReturnCodes.IOErrorReadingData;
 
                         // convert UTC SCDateTime to C# DateTime in Eastern US timezone
                         DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
