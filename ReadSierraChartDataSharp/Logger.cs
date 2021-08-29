@@ -6,8 +6,17 @@
 using System.Diagnostics;
 
 namespace ReadSierraChartDataSharp {
+    // warnings are greater than 0, errors are less than 0
+    internal enum ReturnCodes {
+        Successful = 0,
+        Ignored = 1,
+        MalformedFuturesFileName = -1,
+        IOErrorReadingData = -2
+    }
+
     internal class Logger {
         internal int state = -1;
+        internal ReturnCodes worst_code = Successful;
         StreamWriter? outputFile;
 
         internal Logger(string datafile_dir) {
@@ -30,7 +39,7 @@ namespace ReadSierraChartDataSharp {
             state = 0;
         }
 
-        internal int log(int code, string message) {
+        internal ReturnCodes log(ReturnCodes code, string message) {
             Debug.Assert(message.Length > 0);
             Debug.Assert(state == 0);
             if (outputFile != null) {
@@ -38,6 +47,9 @@ namespace ReadSierraChartDataSharp {
                 Debug.Assert(dt_str.Length > 0);
                 outputFile.WriteLine($"{dt_str},{code},{message}");
             }
+
+            if (code < worst_code)
+                worst_code = code;
             return code;
         }
 
