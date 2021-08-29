@@ -6,15 +6,7 @@
 using System.Diagnostics;
 
 namespace ReadSierraChartDataSharp {
-    // warnings are greater than 0, errors are less than 0
-    internal enum ReturnCodes {
-        Successful = 0,
-        Ignored = 1,
-        MalformedFuturesFileName = -1,
-        IOErrorReadingData = -2
-    }
-
-    internal class Logger {
+    class Logger {
         internal int state = -1;
         internal ReturnCodes worst_code = ReturnCodes.Successful;
         StreamWriter? outputFile;

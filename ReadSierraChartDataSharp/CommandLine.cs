@@ -4,7 +4,7 @@
 //
 
 namespace ReadSierraChartDataSharp {
-    internal static class CommandLine {
+    static class CommandLine {
         internal static int ProcessCommandLineArguments(string[] args) {
             int rc = 0;
             string? arg_name = null;

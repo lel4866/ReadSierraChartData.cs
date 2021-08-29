@@ -13,7 +13,16 @@ using System.Runtime.InteropServices;
 using System.IO.Compression;
 
 namespace ReadSierraChartDataSharp {
-    internal static class Program {
+    // warnings are greater than 0, errors are less than 0
+    enum ReturnCodes {
+        Successful = 0,
+        Ignored = 1,
+        MalformedFuturesFileName = -1,
+        IOErrorReadingData = -2
+    }
+
+    // reurns 0 if everything went OK, except for warnings, -1 if there were errors that needed attention (bad parameters, IO errors)
+    static class Program {
         internal const string version = "ReadSierraChartDataSharp 0.1.0";
         internal static string futures_root = "ES";
         internal static bool update_only = true; // only process .scid files in datafile_dir which do not have counterparts in datafile_outdir

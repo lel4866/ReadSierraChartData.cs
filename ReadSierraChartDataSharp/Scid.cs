@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using static ReadSierraChartDataSharp.Program;
 
 namespace ReadSierraChartDataSharp {
-    internal class Scid {
+    class Scid {
         static readonly DateTime SCDateTimeEpoch = new DateTime(1899, 12, 30, 0, 0, 0, DateTimeKind.Utc); // Sierra Chart SCDateTime start
         static readonly TimeZoneInfo EasternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("US Eastern Standard Time");
         static readonly int ihr_size = Marshal.SizeOf(typeof(Scid.s_IntradayFileHeader));
