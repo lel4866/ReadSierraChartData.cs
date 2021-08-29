@@ -41,7 +41,7 @@ namespace ReadSierraChartDataSharp {
             stopWatch.Start();
 
             int rc = CommandLine.ProcessCommandLineArguments(args);
-            if (rc != 0) 
+            if (rc != 0)
                 return -1;
 
             string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
@@ -60,17 +60,17 @@ namespace ReadSierraChartDataSharp {
 
             // make sure filename has a valid futures code: 'H', 'M', 'U', 'Z'
             char futures_code = filename[futures_root.Length];
-            if (!futures_codes.ContainsKey(futures_code)) 
+            if (!futures_codes.ContainsKey(futures_code))
                 return logger.log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
 
             // get 4 digit futures year from .scid filename (which has 2 digit year)
             string futures_two_digit_year_str = filename.Substring(futures_root.Length + 1, 2);
-            if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1])) 
+            if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1]))
                 return logger.log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
-            
+
             int futures_year;
             bool parse_suceeded = Int32.TryParse(futures_two_digit_year_str, out futures_year);
-            if (!parse_suceeded) 
+            if (!parse_suceeded)
                 return logger.log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
             futures_year += 2000;
 
@@ -82,7 +82,7 @@ namespace ReadSierraChartDataSharp {
 
             // if update_only is true and file already exists in datafile_outdir, ignore it
             if (update_only) {
-                if (File.Exists(out_path_zip)) 
+                if (File.Exists(out_path_zip))
                     return logger.log(ReturnCodes.Ignored, "Update only mode; file ignored: " + filepath);
             }
             Console.WriteLine("Processing " + filepath);
@@ -94,53 +94,53 @@ namespace ReadSierraChartDataSharp {
             DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
             DateTime end_dt = new DateTime(end_year, end_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
 
-            using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
-                using (StreamWriter writer = new StreamWriter(out_path_csv)) {
-                    var ihr = new s_IntradayFileHeader();
-                    var ir = new s_IntradayRecord();
-                    BinaryReader io = new BinaryReader(f);
+            using var f = File.Open(filepath, FileMode.Open, FileAccess.Read);
+            BinaryReader io = new BinaryReader(f);
+            using StreamWriter writer = new StreamWriter(out_path_csv);
 
-                    // skip 56 byte header
-                    if (!ihr.Read(io))
-                        return ReturnCodes.IOErrorReadingData;
-                    Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
+            var ihr = new s_IntradayFileHeader();
+            var ir = new s_IntradayRecord();
 
-                    string prev_ts = "";
-                    while (io.BaseStream.Position != io.BaseStream.Length) {
-                        // read a Sierra Chart tick record
-                        if (!ir.Read(io))
-                            return ReturnCodes.IOErrorReadingData;
+            // skip 56 byte header
+            if (!ihr.Read(io))
+                return ReturnCodes.IOErrorReadingData;
+            Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
-                        // convert UTC SCDateTime to C# DateTime in Eastern US timezone
-                        DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
+            string prev_ts = "";
+            while (io.BaseStream.Position != io.BaseStream.Length) {
+                // read a Sierra Chart tick record
+                if (!ir.Read(io))
+                    return ReturnCodes.IOErrorReadingData;
 
-                        // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
-                        if (dt_et < start_dt)
-                            continue;
-                        if (dt_et >= end_dt)
-                            break;
+                // convert UTC SCDateTime to C# DateTime in Eastern US timezone
+                DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
 
-                        // only keep 1 tick for each second
-                        // note...using "s" is twice as fast as using a custom format string
-                        string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
-                        if (ts == prev_ts)
-                            continue;
-                        prev_ts = ts;
+                // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
+                if (dt_et < start_dt)
+                    continue;
+                if (dt_et >= end_dt)
+                    break;
 
-                        // convert tick tuple to string
-                        writer.WriteLine($"{ts},{ir.Close:F2}");
-                    }
-                }
+                // only keep 1 tick for each second
+                // note...using "s" is twice as fast as using a custom format string
+                string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                if (ts == prev_ts)
+                    continue;
+                prev_ts = ts;
 
-                File.Delete(out_path_zip); // needed or ZipFile.Open with ZipArchiveMode.Create could fail
-                using (ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create)) {
-                    archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
-                    File.Delete(out_path_csv);
-                }
-
-                return logger.log(ReturnCodes.Successful, out_path_zip + " created.");
+                // convert tick tuple to string
+                writer.WriteLine($"{ts},{ir.Close:F2}");
             }
+
+            File.Delete(out_path_zip); // needed or ZipFile.Open with ZipArchiveMode.Create could fail
+
+            using ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create);
+            archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
+            File.Delete(out_path_csv);
+
+            return logger.log(ReturnCodes.Successful, out_path_zip + " created.");
         }
+
 
         // get the months and years of the 3 months of futures data we want
         static (int start_year, int start_month, int end_year, int end_month) getFuturesStartEndDates(char futures_code, int futures_year) {
