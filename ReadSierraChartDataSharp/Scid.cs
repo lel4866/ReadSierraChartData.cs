@@ -44,7 +44,7 @@ namespace ReadSierraChartDataSharp {
             }
             catch (IOException) {
                 Console.WriteLine("IO Error reading header: " + f.ToString());
-                logger.log(ReturnCodes.IOErrorReadingData, "IO Error: " + f.ToString());
+                logger?.log(ReturnCodes.IOErrorReadingData, "IO Error: " + f.ToString());
                 return false;
             }
 
@@ -78,7 +78,7 @@ namespace ReadSierraChartDataSharp {
             }
             catch (IOException) {
                 Console.WriteLine("IO Error reading header: " + f.ToString());
-                logger.log(ReturnCodes.IOErrorReadingData, "IO Error: " + f.ToString());
+                logger?.log(ReturnCodes.IOErrorReadingData, "IO Error: " + f.ToString());
                 return false;
             }
 

@@ -7,7 +7,6 @@ using System.Diagnostics;
 
 namespace ReadSierraChartDataSharp {
     class Logger {
-        internal ReturnCodes worst_code = ReturnCodes.Successful;
         StreamWriter? outputFile = null;
 
         internal Logger(string datafile_dir) {
@@ -26,22 +25,18 @@ namespace ReadSierraChartDataSharp {
             }
         }
 
-        internal ReturnCodes log(ReturnCodes code, string message) {
+        // returns 0 if normal message, -1 if error message (code < 0)
+        internal void log(ReturnCodes code, string message) {
             Debug.Assert(message.Length > 0);
             if (outputFile != null) {
                 string dt_str = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
                 Debug.Assert(dt_str.Length > 0);
                 outputFile.WriteLine($"{dt_str},{code},{message}");
             }
-
-            if (code < worst_code)
-                worst_code = code;
-            return code;
         }
 
         internal void close() {
-            if (outputFile != null)
-                outputFile.Close();
+            outputFile?.Close();
         }
     }
 }

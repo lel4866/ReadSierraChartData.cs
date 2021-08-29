@@ -16,7 +16,7 @@ namespace ReadSierraChartDataSharp {
     // warnings are greater than 0, errors are less than 0
     enum ReturnCodes {
         Successful = 0,
-        Ignored = 1,
+        FileIgnored = 1,
         MalformedFuturesFileName = -1,
         IOErrorReadingData = -2
     }
@@ -31,7 +31,8 @@ namespace ReadSierraChartDataSharp {
         const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
         static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
 
-        static internal Logger logger = new Logger(datafile_outdir);
+        static internal Logger? logger = null;
+        static int return_code = 0;
 
         static int Main(string[] args) {
             var stopWatch = new Stopwatch();
@@ -39,33 +40,39 @@ namespace ReadSierraChartDataSharp {
 
             CommandLine.ProcessCommandLineArguments(args); // calls System.Environment.Exit(-1) if bad command line arguments
 
-            string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
-            Parallel.ForEach(filenames, filename => ProcessScidFile(filename));
-            logger.close();
+            try {
+                logger = new(datafile_outdir); // this could call System.Environment.Exit
+                string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
+                Parallel.ForEach(filenames, filename => ProcessScidFile(filename));
+            }
+            finally {
+                logger?.close();
+            }
 
             stopWatch.Stop();
             Console.WriteLine($"Elapsed time = {stopWatch.Elapsed}");
 
-            return (logger.worst_code < 0) ? -1 : 0;
+            return return_code;
         }
 
-        static ReturnCodes ProcessScidFile(string filepath) {
+        // returns 0 if success OR FileIgnored due to update_only mode, -1 for malformed file names, IO error 
+        static int ProcessScidFile(string filepath) {
             string filename = Path.GetFileNameWithoutExtension(filepath);
 
             // make sure filename has a valid futures code: 'H', 'M', 'U', 'Z'
             char futures_code = filename[futures_root.Length];
             if (!futures_codes.ContainsKey(futures_code))
-                return logger.log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
+                return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
 
             // get 4 digit futures year from .scid filename (which has 2 digit year)
             string futures_two_digit_year_str = filename.Substring(futures_root.Length + 1, 2);
             if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1]))
-                return logger.log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
+                return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
 
             int futures_year;
             bool parse_suceeded = Int32.TryParse(futures_two_digit_year_str, out futures_year);
             if (!parse_suceeded)
-                return logger.log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
+                return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
             futures_year += 2000;
 
             // get filenames for temporary .csv output file and final .zip file
@@ -77,7 +84,7 @@ namespace ReadSierraChartDataSharp {
             // if update_only is true and file already exists in datafile_outdir, ignore it
             if (update_only) {
                 if (File.Exists(out_path_zip))
-                    return logger.log(ReturnCodes.Ignored, "Update only mode; file ignored: " + filepath);
+                    return log(ReturnCodes.FileIgnored, "Update only mode; file ignored: " + filepath);
             }
             Console.WriteLine("Processing " + filepath);
 
@@ -97,14 +104,14 @@ namespace ReadSierraChartDataSharp {
 
             // skip 56 byte header
             if (!ihr.Read(io))
-                return ReturnCodes.IOErrorReadingData;
+                return -1;
             Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
             string prev_ts = "";
             while (io.BaseStream.Position != io.BaseStream.Length) {
                 // read a Sierra Chart tick record
                 if (!ir.Read(io))
-                    return ReturnCodes.IOErrorReadingData;
+                    return -1;
 
                 // convert UTC SCDateTime to C# DateTime in Eastern US timezone
                 DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
@@ -132,9 +139,8 @@ namespace ReadSierraChartDataSharp {
             archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
             File.Delete(out_path_csv);
 
-            return logger.log(ReturnCodes.Successful, out_path_zip + " created.");
+            return log(ReturnCodes.Successful, out_path_zip + " created.");
         }
-
 
         // get the months and years of the 3 months of futures data we want
         static (int start_year, int start_month, int end_year, int end_month) getFuturesStartEndDates(char futures_code, int futures_year) {
@@ -154,6 +160,15 @@ namespace ReadSierraChartDataSharp {
             }
 
             return (start_year, start_month, end_year, end_month);
+        }
+
+        // thread safe setting of return_code
+        static int log(ReturnCodes code, string message) {
+            logger?.log(code, message);
+            int rc = code < 0 ? -1 : 0;
+            if (rc < 0)
+                Interlocked.Exchange(ref return_code, rc);
+            return rc;
         }
     }
 }

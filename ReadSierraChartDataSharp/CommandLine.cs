@@ -6,7 +6,6 @@
 namespace ReadSierraChartDataSharp {
     static class CommandLine {
         internal static void ProcessCommandLineArguments(string[] args) {
-            int rc = 0;
             string? arg_name = null;
 
             foreach (string arg in args) {
@@ -33,7 +32,6 @@ namespace ReadSierraChartDataSharp {
                             Console.WriteLine("    --version, -v : display version number");
                             Console.WriteLine("    --update, -u  : only process files input directory which do not have corresponding file in output directory");
                             Console.WriteLine("    --symbol, -s  : futures contract symbol; i.e. for CME SP500 e-mini: ES");
-                            rc = 1;
                             break;
 
                         default:
