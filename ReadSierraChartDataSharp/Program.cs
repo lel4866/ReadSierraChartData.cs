@@ -96,14 +96,14 @@ namespace ReadSierraChartDataSharp {
 
             using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
                 using (StreamWriter writer = new StreamWriter(out_path_csv)) {
-                    var ihr = new Scid.s_IntradayFileHeader();
-                    var ir = new Scid.s_IntradayRecord();
+                    var ihr = new s_IntradayFileHeader();
+                    var ir = new s_IntradayRecord();
                     BinaryReader io = new BinaryReader(f);
 
                     // skip 56 byte header
                     if (!ihr.Read(io))
                         return ReturnCodes.IOErrorReadingData;
-                    Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(Scid.s_IntradayRecord)));
+                    Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
                     string prev_ts = "";
                     while (io.BaseStream.Position != io.BaseStream.Length) {
