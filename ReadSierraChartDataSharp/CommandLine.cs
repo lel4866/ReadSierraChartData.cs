@@ -5,7 +5,7 @@
 
 namespace ReadSierraChartDataSharp {
     static class CommandLine {
-        internal static int ProcessCommandLineArguments(string[] args) {
+        internal static void ProcessCommandLineArguments(string[] args) {
             int rc = 0;
             string? arg_name = null;
 
@@ -38,7 +38,7 @@ namespace ReadSierraChartDataSharp {
 
                         default:
                             Console.WriteLine("Invalid command line argument: " + arg);
-                            rc = -1;
+                            System.Environment.Exit(-1);
                             break;
                     }
                 }
@@ -47,7 +47,7 @@ namespace ReadSierraChartDataSharp {
                         case "-s":
                             if (Program.futures_root.Length > 3) {
                                 Console.WriteLine("Invalid futures contract symbol: " + arg);
-                                return -1;
+                                System.Environment.Exit(-1);
                             }
                             Program.futures_root = arg.ToUpper();
                             break;
@@ -55,8 +55,6 @@ namespace ReadSierraChartDataSharp {
                     arg_name = null;
                 }
             }
-
-            return rc;
         }
     }
 }

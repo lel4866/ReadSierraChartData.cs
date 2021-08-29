@@ -34,15 +34,10 @@ namespace ReadSierraChartDataSharp {
         static internal Logger logger = new Logger(datafile_outdir);
 
         static int Main(string[] args) {
-            if (logger.state != 0)
-                return -1;
-
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            int rc = CommandLine.ProcessCommandLineArguments(args);
-            if (rc != 0)
-                return -1;
+            CommandLine.ProcessCommandLineArguments(args); // calls System.Environment.Exit(-1) if bad command line arguments
 
             string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
             Parallel.ForEach(filenames, filename => ProcessScidFile(filename));
@@ -51,8 +46,7 @@ namespace ReadSierraChartDataSharp {
             stopWatch.Stop();
             Console.WriteLine($"Elapsed time = {stopWatch.Elapsed}");
 
-            rc = (logger.worst_code < 0) ? -1 : 0;
-            return rc;
+            return (logger.worst_code < 0) ? -1 : 0;
         }
 
         static ReturnCodes ProcessScidFile(string filepath) {

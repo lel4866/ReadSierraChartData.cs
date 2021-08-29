@@ -7,9 +7,8 @@ using System.Diagnostics;
 
 namespace ReadSierraChartDataSharp {
     class Logger {
-        internal int state = -1;
         internal ReturnCodes worst_code = ReturnCodes.Successful;
-        StreamWriter? outputFile;
+        StreamWriter? outputFile = null;
 
         internal Logger(string datafile_dir) {
             try {
@@ -23,17 +22,12 @@ namespace ReadSierraChartDataSharp {
             }
             catch (Exception ex) {
                 Console.WriteLine("Unable to create log file in :" + datafile_dir + "\n Message: " + ex.Message);
-                state = -2;
-                return;
+                System.Environment.Exit(-1);
             }
-
-            // log file created
-            state = 0;
         }
 
         internal ReturnCodes log(ReturnCodes code, string message) {
             Debug.Assert(message.Length > 0);
-            Debug.Assert(state == 0);
             if (outputFile != null) {
                 string dt_str = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
                 Debug.Assert(dt_str.Length > 0);
@@ -48,7 +42,6 @@ namespace ReadSierraChartDataSharp {
         internal void close() {
             if (outputFile != null)
                 outputFile.Close();
-            state = -1;
         }
     }
 }
