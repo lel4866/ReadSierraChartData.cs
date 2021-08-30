@@ -4,7 +4,6 @@
 //
 
 using System.Diagnostics;
-
 namespace ReadSierraChartDataSharp;
 
 class Logger {

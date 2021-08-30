@@ -31,8 +31,9 @@ static class Program {
     const string datafile_dir = "C:/SierraChart/Data/";
     const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
     static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
-    static readonly TimeSpan six_pm = new(18, 0, 0);
-    static readonly TimeSpan four_thirty_pm = new(16, 30, 0);
+    
+    static readonly TimeSpan four_thirty_pm = new(16, 30, 0); // session end (Eastern/US)
+    static readonly TimeSpan six_pm = new(18, 0, 0); // session start (Eastern/US)
 
     static internal Logger logger = new(datafile_outdir); // this could call System.Environment.Exit
     static int return_code = 0;
@@ -61,29 +62,16 @@ static class Program {
         return return_code;
     }
 
-    // returns 0 if success OR FileIgnored due to update_only mode, -1 for malformed file names, IO error 
+    // returns 0 if (success OR FileIgnored due to update_only mode), -1 for malformed file names, IO error 
+    // also sets global return_code to -1 if return value is -1
     static int ProcessScidFile(string filepath) {
-        string filename = Path.GetFileNameWithoutExtension(filepath);
-
-        // make sure filename has a valid futures code: 'H', 'M', 'U', 'Z'
-        char futures_code = filename[futures_root.Length];
-        if (!futures_codes.ContainsKey(futures_code))
-            return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
-
-        // get 4 digit futures year from .scid filename (which has 2 digit year)
-        string futures_two_digit_year_str = filename.Substring(futures_root.Length + 1, 2);
-        if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1]))
-            return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
-
-        int futures_year;
-        bool parse_suceeded = Int32.TryParse(futures_two_digit_year_str, out futures_year);
-        if (!parse_suceeded)
-            return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + filepath);
-        futures_year += 2000;
+        // fn_base is futures file name without preceeding path or extension (i.e. "ESH20")
+        string fn_base = Path.GetFileNameWithoutExtension(filepath);
+        if (ValidateFuturesFilename(fn_base, out int futures_year, out char futures_code) != 0)
+            return - 1;
 
         // get filenames for temporary .csv output file and final .zip file
-        string out_fn_base = futures_root + futures_code + futures_two_digit_year_str;
-        string out_path = datafile_outdir + out_fn_base;
+        string out_path = datafile_outdir + fn_base;
         string out_path_csv = out_path + ".csv"; // full path
         string out_path_zip = out_path + ".zip"; // full path
 
@@ -153,6 +141,27 @@ static class Program {
         File.Delete(out_path_csv); // delete csv file
 
         return log(ReturnCodes.Successful, out_path_zip + " created.");
+    }
+
+    // make sure filename is of form: {futures_root}{month_code}{2 digit year}
+    static int ValidateFuturesFilename(string fn_base, out int futures_year, out char futures_code) {
+        futures_year = 0;
+
+        // make sure filename has a valid futures code: 'H', 'M', 'U', 'Z'
+        futures_code = fn_base[futures_root.Length];
+        if (!futures_codes.ContainsKey(futures_code))
+            return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + fn_base + ".scid");
+
+        // get 4 digit futures year from .scid filename (which has 2 digit year)
+        string futures_two_digit_year_str = fn_base.Substring(futures_root.Length + 1, 2);
+        if (!Char.IsDigit(futures_two_digit_year_str[0]) || !Char.IsDigit(futures_two_digit_year_str[1]))
+            return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + fn_base + ".scid");
+
+        bool parse_suceeded = Int32.TryParse(futures_two_digit_year_str, out futures_year);
+        if (!parse_suceeded)
+            return log(ReturnCodes.MalformedFuturesFileName, "Malformed futures file name: " + fn_base + ".scid");
+        futures_year += 2000;
+        return 0;
     }
 
     // get the months and years of the 3 months of futures data we want
