@@ -190,6 +190,7 @@ static class Program {
         return true;
     }
 
+    // This also tries to exclude days that are half days due to next day being a holiday
     static bool IsMarketHoliday(DateTime dt) {
         if (dt.DayOfWeek == DayOfWeek.Saturday || dt.DayOfWeek == DayOfWeek.Sunday)
             return true;
