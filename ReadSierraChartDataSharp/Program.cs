@@ -37,11 +37,15 @@ static class Program {
     static internal Logger logger = new(datafile_outdir); // this could call System.Environment.Exit
     static int return_code = 0;
 
+    static HashSet<DateTime> Holidays = new();
+
     static int Main(string[] args) {
         var stopWatch = new Stopwatch();
         stopWatch.Start();
 
         CommandLine.ProcessCommandLineArguments(args); // calls System.Environment.Exit(-1) if bad command line arguments
+
+        ReadMarketHolidays();
 
         try {
             string[] filenames = Directory.GetFiles(datafile_dir, futures_root + "*.scid", SearchOption.TopDirectoryOnly);
@@ -190,11 +194,37 @@ static class Program {
         return true;
     }
 
+    static void ReadMarketHolidays() {
+        DateTime prev_dt = new();
+        string[] lines = System.IO.File.ReadAllLines("../../../../MarketHolidays.txt");
+        foreach (string line in lines) {
+            string tline = line.Trim();
+            if (tline.Length == 0)
+                continue;
+            bool rc = DateTime.TryParse(tline, out DateTime dt);
+            if (!rc) {
+                Console.WriteLine("Invalid date in ReadMarketHolidays().txt: " + line);
+                System.Environment.Exit(-1);
+            }
+            if (dt < prev_dt) {
+                Console.WriteLine("Out of order date in ReadMarketHolidays().txt: " + line);
+                System.Environment.Exit(-1);
+            }
+            if (Holidays.Contains(dt)) {
+                Console.WriteLine("Duplicate date in ReadMarketHolidays().txt: " + line);
+                System.Environment.Exit(-1);
+            }
+
+            Holidays.Add(dt.Date);
+            prev_dt = dt;
+        }
+    }
+
     // This also tries to exclude days that are half days due to next day being a holiday
     static bool IsMarketHoliday(DateTime dt) {
         if (dt.DayOfWeek == DayOfWeek.Saturday || dt.DayOfWeek == DayOfWeek.Sunday)
             return true;
-        return false;
+        return Holidays.Contains(dt.Date);
     }
 
     // thread safe setting of return_code when logging
