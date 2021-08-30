@@ -101,54 +101,56 @@ static class Program {
         DateTime start_dt = new DateTime(start_year, start_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
         DateTime end_dt = new DateTime(end_year, end_month, 9, 18, 0, 0, DateTimeKind.Unspecified);
 
-        using var f = File.Open(filepath, FileMode.Open, FileAccess.Read);
-        BinaryReader io = new BinaryReader(f);
-        using StreamWriter writer = new StreamWriter(out_path_csv);
-
         var ihr = new s_IntradayFileHeader();
         var ir = new s_IntradayRecord();
 
-        // skip 56 byte header
-        if (!ihr.Read(io))
-            return -1;
-        Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
+        using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
+            using (BinaryReader io = new BinaryReader(f)) {
+                // skip 56 byte header
+                if (!ihr.Read(io))
+                    return -1;
+                Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
-        string prev_ts = "";
-        while (io.BaseStream.Position != io.BaseStream.Length) {
-            // read a Sierra Chart tick record
-            if (!ir.Read(io))
-                return -1;
+                using (StreamWriter writer = new StreamWriter(out_path_csv)) {
+                    string prev_ts = "";
+                    while (io.BaseStream.Position != io.BaseStream.Length) {
+                        // read a Sierra Chart tick record
+                        if (!ir.Read(io))
+                            return -1;
 
-            // convert UTC SCDateTime to C# DateTime in Eastern US timezone
-            DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
+                        // convert UTC SCDateTime to C# DateTime in Eastern US timezone
+                        DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
 
-            // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
-            if (dt_et < start_dt)
-                continue;
-            if (dt_et >= end_dt)
-                break;
+                        // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
+                        if (dt_et < start_dt)
+                            continue;
+                        if (dt_et >= end_dt)
+                            break;
 
-            // throw away ticks before 6pm if Saturday, Sunday, or holiday)
-            // throw away ticks after 4:30p if next day is not trading day (Saturday, Sunday, holiday)
-            if (!IsValidTickTime(dt_et))
-                continue;
+                        // throw away ticks before 6pm if Saturday, Sunday, or holiday)
+                        // throw away ticks after 4:30p if next day is not trading day (Saturday, Sunday, holiday)
+                        if (!IsValidTickTime(dt_et))
+                            continue;
 
-            // only keep 1 tick for each second
-            // note...using "s" is twice as fast as using a custom format string
-            string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
-            if (ts == prev_ts)
-                continue;
-            prev_ts = ts;
+                        // only keep 1 tick for each second
+                        // note...using "s" is twice as fast as using a custom format string
+                        string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                        if (ts == prev_ts)
+                            continue;
+                        prev_ts = ts;
 
-            // convert tick tuple to string
-            writer.WriteLine($"{ts},{ir.Close:F2}");
+                        // convert tick tuple to string
+                        writer.WriteLine($"{ts},{ir.Close:F2}");
+                    }
+                }
+            }
         }
 
-        File.Delete(out_path_zip); // needed or ZipFile.Open with ZipArchiveMode.Create could fail
-
+        // create output zip file and add csv created above to it
+        File.Delete(out_path_zip); // in case zio file already exists...needed or ZipFile.Open with ZipArchiveMode.Create could fail
         using ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create);
         archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
-        File.Delete(out_path_csv);
+        File.Delete(out_path_csv); // delete csv file
 
         return log(ReturnCodes.Successful, out_path_zip + " created.");
     }
