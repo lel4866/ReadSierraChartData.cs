@@ -31,7 +31,7 @@ static class Program {
     const string datafile_dir = "C:/SierraChart/Data/";
     const string datafile_outdir = "C:/Users/lel48/SierraChartData/";
     static readonly Dictionary<char, int> futures_codes = new() { { 'H', 3 }, { 'M', 6 }, { 'U', 9 }, { 'Z', 12 } };
-    
+
     static readonly TimeSpan four_thirty_pm = new(16, 30, 0); // session end (Eastern/US)
     static readonly TimeSpan six_pm = new(18, 0, 0); // session start (Eastern/US)
 
@@ -68,7 +68,7 @@ static class Program {
         // fn_base is futures file name without preceeding path or extension (i.e. "ESH20")
         string fn_base = Path.GetFileNameWithoutExtension(filepath);
         if (ValidateFuturesFilename(fn_base, out int futures_year, out char futures_code) != 0)
-            return - 1;
+            return -1;
 
         // get filenames for temporary .csv output file and final .zip file
         string out_path = datafile_outdir + fn_base;
@@ -92,52 +92,51 @@ static class Program {
         var ihr = new s_IntradayFileHeader();
         var ir = new s_IntradayRecord();
 
-        using (var f = File.Open(filepath, FileMode.Open, FileAccess.Read)) {
-            using (BinaryReader io = new BinaryReader(f)) {
-                // skip 56 byte header
-                if (!ihr.Read(io))
-                    return -1;
-                Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
+        using (BinaryReader io = new BinaryReader(File.Open(filepath, FileMode.Open, FileAccess.Read))) {
+            // skip 56 byte header
+            if (!ihr.Read(io))
+                return -1;
+            Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
-                using (StreamWriter writer = new StreamWriter(out_path_csv)) {
-                    string prev_ts = "";
-                    while (io.BaseStream.Position != io.BaseStream.Length) {
-                        // read a Sierra Chart tick record
-                        if (!ir.Read(io))
-                            return -1;
+            using (StreamWriter writer = new StreamWriter(out_path_csv)) {
+                string prev_ts = "";
+                while (io.BaseStream.Position != io.BaseStream.Length) {
+                    // read a Sierra Chart tick record
+                    if (!ir.Read(io))
+                        return -1;
 
-                        // convert UTC SCDateTime to C# DateTime in Eastern US timezone
-                        DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
+                    // convert UTC SCDateTime to C# DateTime in Eastern US timezone
+                    DateTime dt_et = Scid.GetEasternDateTimeFromSCDateTime(ir.SCDateTime);
 
-                        // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
-                        if (dt_et < start_dt)
-                            continue;
-                        if (dt_et >= end_dt)
-                            break;
+                    // only keep ticks between specified start and end date/times...that is, for the 3 "active" months
+                    if (dt_et < start_dt)
+                        continue;
+                    if (dt_et >= end_dt)
+                        break;
 
-                        // throw away ticks before 6pm if Saturday, Sunday, or holiday)
-                        // throw away ticks after 4:30p if next day is not trading day (Saturday, Sunday, holiday)
-                        if (!IsValidTickTime(dt_et))
-                            continue;
+                    // throw away ticks before 6pm if Saturday, Sunday, or holiday)
+                    // throw away ticks after 4:30p if next day is not trading day (Saturday, Sunday, holiday)
+                    if (!IsValidTickTime(dt_et))
+                        continue;
 
-                        // only keep 1 tick for each second
-                        // note...using "s" is twice as fast as using a custom format string
-                        string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
-                        if (ts == prev_ts)
-                            continue;
-                        prev_ts = ts;
+                    // only keep 1 tick for each second
+                    // note...using "s" is twice as fast as using a custom format string
+                    string ts = dt_et.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                    if (ts == prev_ts)
+                        continue;
+                    prev_ts = ts;
 
-                        // convert tick tuple to string
-                        writer.WriteLine($"{ts},{ir.Close:F2}");
-                    }
+                    // convert tick tuple to string
+                    writer.WriteLine($"{ts},{ir.Close:F2}");
                 }
             }
         }
 
         // create output zip file and add csv created above to it
         File.Delete(out_path_zip); // in case zio file already exists...needed or ZipFile.Open with ZipArchiveMode.Create could fail
-        using ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create);
-        archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
+        using (ZipArchive archive = ZipFile.Open(out_path_zip, ZipArchiveMode.Create)) {
+            archive.CreateEntryFromFile(out_path_csv, Path.GetFileName(out_path_csv));
+        }
         File.Delete(out_path_csv); // delete csv file
 
         return log(ReturnCodes.Successful, out_path_zip + " created.");
