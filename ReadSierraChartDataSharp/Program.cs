@@ -24,6 +24,7 @@ enum ReturnCodes {
 
 // reurns 0 if everything went OK, except for warnings, -1 if there were errors that needed attention (bad parameters, IO errors)
 static class Program {
+    const string output_time_zone = "ISODateTime(Eastern/US)";
     internal const string version = "ReadSierraChartDataSharp 0.1.0";
     internal static string futures_root = "ES";
     internal static bool update_only = true; // only process .scid files in datafile_dir which do not have counterparts in datafile_outdir
@@ -99,6 +100,9 @@ static class Program {
             Debug.Assert(ihr.RecordSize == Marshal.SizeOf(typeof(s_IntradayRecord)));
 
             using (StreamWriter writer = new StreamWriter(out_path_csv)) {
+                // write header
+                writer.WriteLine($"{output_time_zone},Close,BidVolume,AskVolume");
+
                 string prev_ts = "";
                 while (io.BaseStream.Position != io.BaseStream.Length) {
                     // read a Sierra Chart tick record
@@ -127,7 +131,7 @@ static class Program {
                     prev_ts = ts;
 
                     // convert tick tuple to string
-                    writer.WriteLine($"{ts},{ir.Close:F2}");
+                    writer.WriteLine($"{ts},{ir.Close:F2},{ir.BidVolume:F2},{ir.AskVolume:F2}");
                 }
             }
         }
