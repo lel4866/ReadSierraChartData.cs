@@ -131,7 +131,7 @@ static class Program {
                     prev_ts = ts;
 
                     // convert tick tuple to string
-                    writer.WriteLine($"{ts},{ir.Close:F2},{ir.BidVolume:F2},{ir.AskVolume:F2}");
+                    writer.WriteLine($"{ts},{ir.Close:F2},{ir.BidVolume},{ir.AskVolume}");
                 }
             }
         }
