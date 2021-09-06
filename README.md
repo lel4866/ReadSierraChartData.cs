@@ -1,4 +1,4 @@
-# ReadSierraChartSCIDSharp
+# ReadSierraChartData.cs
 C# version of program to read Sierra Chart(tm) SCID stock/futures binary data files
 
 This program reads Sierra Chart .scid files from C:/SierraChart/Data directory and writes filtered CSV files to the local SierraChartData directory.
