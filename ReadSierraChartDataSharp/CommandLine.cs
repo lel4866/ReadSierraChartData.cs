@@ -3,6 +3,8 @@
 // Process ReadSierraChartDataSharp command line
 //
 
+using System;
+
 namespace ReadSierraChartDataSharp;
 
 static class CommandLine {

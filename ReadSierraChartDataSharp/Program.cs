@@ -11,6 +11,11 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO.Compression;
+using System.Collections.Generic;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace ReadSierraChartDataSharp;
 

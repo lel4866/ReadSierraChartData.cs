@@ -3,8 +3,10 @@
 // of records (s_IntradayRecord)
 // The structure definitions are based on the Sierra Chart IntradayRecord.h header file
 
+using System;
+using System.IO;
 using System.Runtime.InteropServices;
-//using static ReadSierraChartDataSharp.Program;
+
 namespace ReadSierraChartDataSharp;
 
 class Scid {

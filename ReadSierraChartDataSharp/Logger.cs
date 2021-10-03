@@ -3,10 +3,14 @@
 // I just need: datetime, code, string
 //
 
+using System;
 using System.Diagnostics;
+using System.IO;
+
 namespace ReadSierraChartDataSharp;
 
 class Logger {
+    private readonly object logLock = new object();
     StreamWriter? outputFile = null;
 
     internal Logger(string datafile_dir) {
@@ -28,14 +32,22 @@ class Logger {
     // returns 0 if normal message, -1 if error message (code < 0)
     internal void log(ReturnCodes code, string message) {
         Debug.Assert(message.Length > 0);
-        if (outputFile != null) {
-            string dt_str = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
-            Debug.Assert(dt_str.Length > 0);
-            outputFile.WriteLine($"{dt_str},{code},{message}");
+        lock (logLock)
+        {
+            if (outputFile != null)
+            {
+                string dt_str = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                Debug.Assert(dt_str.Length > 0);
+                outputFile.WriteLine(dt_str + ',' + code + ',' + message);
+            }
         }
     }
 
     internal void close() {
-        outputFile?.Close();
+        lock (logLock)
+        {
+            outputFile?.Close();
+            outputFile = null;
+        }
     }
 }
